@@ -4,105 +4,114 @@ import (
 	"fmt"
 )
 
-//не забыть создать ветку dev
-
 var player *Player
-var rooms map[string]*Room
+var rooms map[RoomName]IRoom
+
 var playerAction map[string]ActionDelegate
 
 type ActionDelegate func(*Player, string) string
 
 func main() {
-	name := "player"
-	fmt.Print("Hello ", name)
-
 	initGame()
-	handleCommand("осмотреться")
+	fmt.Println(handleCommand("идти комната"))
 }
 
 func initGame() {
-	rooms = make(map[string]*Room)
+	//rooms = make(map[string]*Room)
+
+	//заново инициализируем комнаты
+	rooms = map[RoomName]IRoom{
+		RoomNameKitchen:  NewKitchen(),
+		RoomNameMyRoom:   NewMyRoom(),
+		RoomNameCorridor: NewCorridor(),
+		RoomNameStreet:   NewStreet(),
+		RoomNameHome:     NewHome(),
+	}
 
 	//Создать предметы и связи
-	keys := NewItem("ключи")
-	keys.AddUsage("дверь", "дверь открыта")
-	notes := NewItem("конспекты")
-	tea := NewItem("чай")
-	backpack := NewItem("рюкзак")
+	//keys := NewItem("ключи")
+	//keys.AddUsage("дверь", "дверь открыта")
+	//notes := NewItem("конспекты")
+	//tea := NewItem("чай")
+	//backpack := NewItem("рюкзак")
 
 	//todo: разделить по запятой lookAroundDescription чтобы вставить предметы на столе и стуле?
 
 	//todo: сделать instruction составной ибо
 	// result:   ты находишься на кухне, на столе: чай, надо собрать рюкзак и идти в универ. можно пройти - коридор
-	//           expected: ты находишься на кухне, на столе: чай, надо идти в универ. можно пройти - коридор
+	// expected: ты находишься на кухне, на столе: чай, надо идти в универ. можно пройти - коридор
 
 	//создать все комнаты
-	kitchenRoom := NewRoom(
-		"кухня",
-		map[string]*Item{
-			"чай": tea,
-		},
-		map[string]string{
-			"roomDescription": "ты находишься на кухне",
-			"instruction":     "надо собрать рюкзак и идти в универ",
-		},
-		"кухня, ничего интересного.",
-		[]*Furniture{
-			{Name: "на столе", Items: []string{"чай"}},
-		})
 
-	rooms[kitchenRoom.RoomName] = kitchenRoom
+	/*
+		kitchenRoom := NewRoom(
+			"кухня",
+			map[string]*Item{
+				"чай": tea,
+			},
+			map[string]string{
+				"roomDescription": "ты находишься на кухне",
+				"instruction":     "надо собрать рюкзак и идти в универ",
+			},
+			"кухня, ничего интересного.",
+			[]*Furniture{
+				{Name: "на столе", Items: []string{"чай"}},
+			})
 
-	corridor := NewRoom(
-		"коридор",
-		map[string]*Item{},
-		map[string]string{},
-		"ничего интересного.",
-		[]*Furniture{})
+		rooms[kitchenRoom.RoomName] = kitchenRoom
 
-	rooms[corridor.RoomName] = corridor
+		corridor := NewRoom(
+			"коридор",
+			map[string]*Item{},
+			map[string]string{},
+			"ничего интересного.",
+			[]*Furniture{})
 
-	myRoom := NewRoom(
-		"комната",
-		map[string]*Item{
-			"ключи":     keys,
-			"конспекты": notes,
-			"рюкзак":    backpack,
-		},
-		map[string]string{},
-		"ты в своей комнате.",
-		[]*Furniture{
-			{Name: "на столе", Items: []string{"ключи", "конспекты"}},
-			{Name: "на стуле", Items: []string{"рюкзак"}},
-		})
+		rooms[corridor.RoomName] = corridor
 
-	rooms[myRoom.RoomName] = myRoom
+		myRoom := NewRoom(
+			"комната",
+			map[string]*Item{
+				"ключи":     keys,
+				"конспекты": notes,
+				"рюкзак":    backpack,
+			},
+			map[string]string{},
+			"ты в своей комнате.",
+			[]*Furniture{
+				{Name: "на столе", Items: []string{"ключи", "конспекты"}},
+				{Name: "на стуле", Items: []string{"рюкзак"}},
+			})
 
-	street := NewRoom(
-		"улица",
-		map[string]*Item{},
-		map[string]string{},
-		"на улице весна.",
-		[]*Furniture{})
+		rooms[myRoom.RoomName] = myRoom
 
-	home := NewRoom(
-		"домой",
-		map[string]*Item{},
-		map[string]string{},
-		"вы вернулись домой",
-		[]*Furniture{})
+		street := NewRoom(
+			"улица",
+			map[string]*Item{},
+			map[string]string{},
+			"на улице весна.",
+			[]*Furniture{})
 
-	rooms[street.RoomName] = street
+		home := NewRoom(
+			"домой",
+			map[string]*Item{},
+			map[string]string{},
+			"вы вернулись домой",
+			[]*Furniture{})
 
-	//добавить связи между комнатами
-	kitchenRoom.AvailableRoomsExit = append(kitchenRoom.AvailableRoomsExit, corridor)
-	corridor.AvailableRoomsExit = append(corridor.AvailableRoomsExit, kitchenRoom, myRoom, street)
-	myRoom.AvailableRoomsExit = append(myRoom.AvailableRoomsExit, corridor)
-	street.AvailableRoomsExit = append(street.AvailableRoomsExit, home)
+		rooms[street.RoomName] = street
 
-	//создать игрока, передать текущую локацию
-	player = NewPlayer(kitchenRoom)
+		//добавить связи между комнатами
+		kitchenRoom.AvailableRoomsExit = append(kitchenRoom.AvailableRoomsExit, corridor)
+		corridor.AvailableRoomsExit = append(corridor.AvailableRoomsExit, kitchenRoom, myRoom, street)
+		myRoom.AvailableRoomsExit = append(myRoom.AvailableRoomsExit, corridor)
+		street.AvailableRoomsExit = append(street.AvailableRoomsExit, home)
 
+		//создать игрока, передать текущую локацию
+		player = NewPlayer(kitchenRoom)
+	*/
+
+	player = NewPlayer(RoomNameKitchen)
 	// создать мапу действий игрока: название - функция
 	playerAction = map[string]ActionDelegate{
 		"осмотреться": (*Player).LookAround,
@@ -119,4 +128,14 @@ func handleCommand(command string) string {
 	result := player.commandHandler(command)
 
 	return result
+}
+
+// удаляет одно вхождение в slice
+func deleteSliceItem[T comparable](items []T, value T) []T {
+	for i, v := range items {
+		if v == value {
+			return append(items[:i], items[i+1:]...)
+		}
+	}
+	return items
 }

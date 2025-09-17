@@ -38,3 +38,7 @@ func (r *RoomCorridor) TransitionInfo() string {
 
 func (r *RoomCorridor) DeleteItemFromFurniture(itemName string) {
 }
+
+func (r *RoomCorridor) IsItemExistThisRoom(itemName string) bool {
+	return false
+}

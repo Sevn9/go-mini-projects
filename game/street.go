@@ -9,10 +9,7 @@ func NewStreet() IRoom {
 }
 
 func (s *Street) LookAroundInfo() string {
-	answer := "ты находишься в коридоре,"
-
-	//все места где можно выйти
-	//беру из mapChangeRoom и добавляю в answer
+	answer := "ты находишься на улице"
 	return answer
 }
 
@@ -39,4 +36,8 @@ func (s *Street) TransitionInfo() string {
 }
 
 func (s *Street) DeleteItemFromFurniture(itemName string) {
+}
+
+func (r *Street) IsItemExistThisRoom(itemName string) bool {
+	return false
 }

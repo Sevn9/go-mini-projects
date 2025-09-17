@@ -108,12 +108,18 @@ func (p *Player) PutOn(itemName string) string {
 		return "предмет нельзя надеть"
 	}
 
-	//существует ли рюкзак в этой комнате? надо достать mapPlaceItemMyRoom
+	room, isRoomExist := rooms[p.currentRoom]
 
-	itemPlacesCurrentRoom, isPlaceExist := mapRoomPlace[p.currentRoom]
+	if !isRoomExist {
+		fmt.Println("LOG PutOn room not exist:" + p.currentRoom)
+		return "такой комнаты не существует"
+	}
 
-	if !isPlaceExist {
-		return "в этой комнате нет предметов"
+	//существует ли рюкзак в этой комнате?
+	isItemExist := room.IsItemExistThisRoom(itemName)
+
+	if !isItemExist {
+		return "нет такого"
 	}
 
 	//изменить состояние игрока
@@ -122,14 +128,7 @@ func (p *Player) PutOn(itemName string) string {
 	p.isBackpackOn = true
 
 	//удалить из комнаты предмет т.к. его больше нет
-	for place, itemsName := range itemPlacesCurrentRoom {
-		for i, item := range itemsName {
-			if item == ItemsName(itemName) {
-				itemPlacesCurrentRoom[place] = append(itemsName[:i], itemsName[i+1:]...)
-				break
-			}
-		}
-	}
+	room.DeleteItemFromFurniture(itemName)
 
 	answer := "вы надели: " + itemName
 	return answer
@@ -142,35 +141,26 @@ func (p *Player) Take(itemName string) string {
 		return "некуда класть"
 	}
 
-	//проверить наличие любых предметов в этой комнате
-	itemPlacesCurrentRoom, isPlaceExist := mapRoomPlace[p.currentRoom]
+	room, isRoomExist := rooms[p.currentRoom]
 
-	if !isPlaceExist {
-		return "в этой комнате нет предметов"
+	if !isRoomExist {
+		fmt.Println("LOG PutOn room not exist:" + p.currentRoom)
+		return "такой комнаты не существует"
 	}
 
-	for placeName, items := range itemPlacesCurrentRoom {
-		fmt.Println("LOG: Take() NowInventory: ")
-		for i, roomItem := range items {
-			if roomItem == ItemsName(itemName) {
-				//положить в инвентарь
-				p.inventoryItems[ItemsName(itemName)] = struct{}{}
-				//удалить из комнаты
-				itemPlacesCurrentRoom[placeName] = append(items[:i], items[i+1:]...)
-				break
-			}
-		}
+	//существует ли этот предмет в этой комнате?
+	isItemExist := room.IsItemExistThisRoom(itemName)
+
+	if !isItemExist {
+		return "нет такого"
 	}
 
-	_, isItemBackpackExist := p.inventoryItems[ItemsName(itemName)]
+	p.inventoryItems[ItemsName(itemName)] = struct{}{}
 
-	var answer string
+	//удалить из комнаты предмет т.к. его больше нет
+	room.DeleteItemFromFurniture(itemName)
 
-	if isItemBackpackExist {
-		answer = "предмет добавлен в инвентарь: " + itemName
-	} else {
-		answer = "такого предмета нет в комнате"
-	}
+	answer := "предмет добавлен в инвентарь: " + itemName
 
 	return answer
 }
@@ -205,17 +195,6 @@ func (p *Player) Apply(instruction string) string {
 	resultAction := interactionMap[InteractionPlaceName(interactionsPlaceName)]
 
 	return resultAction
-}
-
-// удаляет одно вхождение в slice
-func deleteSliceItemOld(items []string, value string) []string {
-	for i, v := range items {
-		if v == value {
-			return append(items[:i], items[i+1:]...)
-		}
-	}
-
-	return items
 }
 
 func ContainsSliceItem(items []string, value string) bool {

@@ -21,3 +21,7 @@ func (r *Home) TransitionInfo() string {
 
 func (r *Home) DeleteItemFromFurniture(itemName string) {
 }
+
+func (r *Home) IsItemExistThisRoom(itemName string) bool {
+	return false
+}

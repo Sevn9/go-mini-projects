@@ -2,7 +2,8 @@ package main
 
 import (
 	"fmt"
-	"maps"
+	"slices"
+	"strings"
 )
 
 type MyRoom struct {
@@ -10,44 +11,50 @@ type MyRoom struct {
 }
 
 func NewMyRoom() IRoom {
-	mapPlace := maps.Clone(mapPlaceItemMyRoom)
-	return &MyRoom{
-		mapPlaceItemMyRoom: mapPlace,
+	mapPlace := make(map[PlaceName][]ItemsName)
+
+	for place, items := range mapPlaceItemMyRoom {
+		copied := make([]ItemsName, len(items))
+		copy(copied, items)
+		mapPlace[place] = copied
 	}
+	return &MyRoom{mapPlaceItemMyRoom: mapPlace}
 }
 
 func (r *MyRoom) LookAroundInfo() string {
 	fmt.Println("LOG LookAroundInfo: MyRoom")
 	var answer string
-
-	furnitureCounter := len(placesOrderMyRoom)
-	fmt.Println("LOG furnitureCounter : ", furnitureCounter)
+	var parts []string
 
 	for _, placeName := range placesOrderMyRoom {
 
-		itemsName := mapPlaceItemMyRoom[placeName]
+		fmt.Println("LOG placeName: ", placeName)
+
+		itemsName, isPlaceItemExist := r.mapPlaceItemMyRoom[placeName]
+
+		if !isPlaceItemExist {
+			return "не существует такого места" + string(placeName)
+		}
+
+		fmt.Println("LOG itemsName: ", itemsName)
 
 		if len(itemsName) == 0 {
 			continue
 		}
-		answer += string(placeName) + ": "
 
-		itemsNameCounter := len(itemsName)
-		//пройдем по itemsName
-		for i, itemName := range itemsName {
-			answer += string(itemName)
-			if i < itemsNameCounter-1 {
-				answer += ", "
-			}
+		var itemStrs []string
+		for _, itemName := range itemsName {
+			itemStrs = append(itemStrs, string(itemName))
 		}
 
-		furnitureCounter--
+		part := string(placeName) + ": " + strings.Join(itemStrs, ", ")
+		parts = append(parts, part)
+	}
 
-		if furnitureCounter > 0 {
-			answer += ", "
-		} else {
-			answer += ". "
-		}
+	if len(parts) == 0 {
+		answer += "пустая комната. "
+	} else {
+		answer += strings.Join(parts, ", ") + ". "
 	}
 
 	//перечислить выходы
@@ -91,7 +98,20 @@ func (r *MyRoom) TransitionInfo() string {
 }
 
 func (r *MyRoom) DeleteItemFromFurniture(itemName string) {
-	for _, y := range r.mapPlaceItemMyRoom {
-		deleteSliceItem(y, ItemsName(itemName))
+	fmt.Println("LOG DeleteItemFromFurniture: ", itemName)
+	for place, y := range r.mapPlaceItemMyRoom {
+		if slices.Contains(y, ItemsName(itemName)) {
+			r.mapPlaceItemMyRoom[place] = deleteSliceItem(y, ItemsName(itemName))
+			fmt.Println("LOG DeleteItemFromFurniture complete: ", r.mapPlaceItemMyRoom[place])
+		}
 	}
+}
+
+func (r *MyRoom) IsItemExistThisRoom(itemName string) bool {
+	for _, placeName := range r.mapPlaceItemMyRoom {
+		if slices.Contains(placeName, ItemsName(itemName)) {
+			return true
+		}
+	}
+	return false
 }

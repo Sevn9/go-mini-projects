@@ -80,6 +80,7 @@ type IRoom interface {
 	LookAroundInfo() string
 	TransitionInfo() string
 	DeleteItemFromFurniture(string)
+	IsItemExistThisRoom(string) bool
 	//DeleteItemFromRoom(string)
 }
 

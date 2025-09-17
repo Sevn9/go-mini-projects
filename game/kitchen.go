@@ -1,7 +1,7 @@
 package main
 
 import (
-	"maps"
+	"slices"
 )
 
 type RoomKitchen struct {
@@ -9,7 +9,13 @@ type RoomKitchen struct {
 }
 
 func NewKitchen() IRoom {
-	mapPlace := maps.Clone(mapPlaceItemKitchen)
+	mapPlace := make(map[PlaceName][]ItemsName)
+
+	for place, items := range mapPlaceItemKitchen {
+		copied := make([]ItemsName, len(items))
+		copy(copied, items)
+		mapPlace[place] = copied
+	}
 	return &RoomKitchen{
 		mapPlaceItemKitchen: mapPlace,
 	}
@@ -49,11 +55,31 @@ func (r *RoomKitchen) LookAroundInfo() string {
 }
 
 func (r *RoomKitchen) TransitionInfo() string {
-	return ""
+	answer := "кухня, ничего интересного. "
+
+	answer += "можно пройти - "
+	for placeNameRoom, exitsRoom := range mapTransitionRoom {
+		if placeNameRoom == RoomNameKitchen {
+			for _, exit := range exitsRoom {
+				answer += string(exit)
+			}
+		}
+	}
+
+	return answer
 }
 
 func (r *RoomKitchen) DeleteItemFromFurniture(itemName string) {
-	for _, y := range r.mapPlaceItemKitchen {
-		deleteSliceItem(y, ItemsName(itemName))
+	for place, y := range r.mapPlaceItemKitchen {
+		r.mapPlaceItemKitchen[place] = deleteSliceItem(y, ItemsName(itemName))
 	}
+}
+
+func (r *RoomKitchen) IsItemExistThisRoom(itemName string) bool {
+	for _, placeName := range r.mapPlaceItemKitchen {
+		if slices.Contains(placeName, ItemsName(itemName)) {
+			return true
+		}
+	}
+	return false
 }

@@ -1,7 +1,6 @@
 package main
 
 import (
-	"fmt"
 	"slices"
 	"strings"
 )
@@ -22,21 +21,12 @@ func NewMyRoom() IRoom {
 }
 
 func (r *MyRoom) LookAroundInfo() string {
-	fmt.Println("LOG LookAroundInfo: MyRoom")
 	var answer string
 	var parts []string
 
 	for _, placeName := range placesOrderMyRoom {
 
-		fmt.Println("LOG placeName: ", placeName)
-
-		itemsName, isPlaceItemExist := r.mapPlaceItemMyRoom[placeName]
-
-		if !isPlaceItemExist {
-			return "не существует такого места" + string(placeName)
-		}
-
-		fmt.Println("LOG itemsName: ", itemsName)
+		itemsName, _ := r.mapPlaceItemMyRoom[placeName]
 
 		if len(itemsName) == 0 {
 			continue
@@ -57,52 +47,25 @@ func (r *MyRoom) LookAroundInfo() string {
 		answer += strings.Join(parts, ", ") + ". "
 	}
 
-	//перечислить выходы
-	answer += "можно пройти - "
-	for placeNameRoom, exitsRoom := range mapTransitionRoom {
-
-		exitsNameCounter := len(exitsRoom)
-
-		if placeNameRoom == RoomNameMyRoom {
-			for i, exit := range exitsRoom {
-				answer += string(exit)
-				if i < exitsNameCounter-1 {
-					answer += ", "
-				}
-			}
-		}
-	}
 	return answer
+}
+
+func (r *MyRoom) CanExitTo(roomName RoomName) (bool, string) {
+	return true, ""
 }
 
 func (r *MyRoom) TransitionInfo() string {
-	fmt.Println("LOG TransitionInfo: MyRoom")
+
 	answer := "ты в своей комнате. "
-
-	answer += "можно пройти - "
-	for placeNameRoom, exitsRoom := range mapTransitionRoom {
-
-		exitsNameCounter := len(exitsRoom)
-
-		if placeNameRoom == RoomNameMyRoom {
-			for i, exit := range exitsRoom {
-				answer += string(exit)
-				if i < exitsNameCounter-1 {
-					answer += ", "
-				}
-			}
-		}
-	}
+	answer += GetExits(RoomNameMyRoom)
 
 	return answer
 }
 
-func (r *MyRoom) DeleteItemFromFurniture(itemName string) {
-	fmt.Println("LOG DeleteItemFromFurniture: ", itemName)
+func (r *MyRoom) DeleteItemFromRoom(itemName string) {
 	for place, y := range r.mapPlaceItemMyRoom {
 		if slices.Contains(y, ItemsName(itemName)) {
 			r.mapPlaceItemMyRoom[place] = deleteSliceItem(y, ItemsName(itemName))
-			fmt.Println("LOG DeleteItemFromFurniture complete: ", r.mapPlaceItemMyRoom[place])
 		}
 	}
 }
@@ -114,4 +77,8 @@ func (r *MyRoom) IsItemExistThisRoom(itemName string) bool {
 		}
 	}
 	return false
+}
+
+func (r *MyRoom) ApplyItem(itemName ItemsName, interactionPlace InteractionPlaceName) string {
+	return ""
 }

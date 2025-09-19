@@ -2,6 +2,7 @@ package main
 
 import (
 	"slices"
+	"strings"
 )
 
 type RoomKitchen struct {
@@ -24,52 +25,47 @@ func NewKitchen() IRoom {
 func (r *RoomKitchen) LookAroundInfo() string {
 	answer := "ты находишься на кухне, "
 
-	//todo: исправить под новую структуру т.к. map не выдает объекты в фиксированном порядке
-	for placeName, itemsName := range r.mapPlaceItemKitchen {
+	var parts []string
+
+	for _, placeName := range placesOrderKitchen {
+
+		itemsName, isPlaceItemExist := r.mapPlaceItemKitchen[placeName]
+
+		if !isPlaceItemExist {
+			return "не существует такого места" + string(placeName)
+		}
 
 		if len(itemsName) == 0 {
 			continue
 		}
 
-		answer += string(placeName) + ": "
-
+		var itemStrs []string
 		for _, itemName := range itemsName {
-			answer += string(itemName) + ", "
+			itemStrs = append(itemStrs, string(itemName))
 		}
+
+		part := string(placeName) + ": " + strings.Join(itemStrs, ", ")
+		parts = append(parts, part)
 	}
 
-	//если ничего не собрано:
-	answer += "надо собрать рюкзак и идти в универ. "
-
-	//все места где можно выйти
-	answer += "можно пройти - "
-	for placeNameRoom, exitsRoom := range mapTransitionRoom {
-		if placeNameRoom == RoomNameKitchen {
-			for _, exit := range exitsRoom {
-				answer += string(exit)
-			}
-		}
-	}
+	answer += strings.Join(parts, ", ") + ", "
 
 	return answer
+}
+
+func (r *RoomKitchen) CanExitTo(roomName RoomName) (bool, string) {
+	return true, ""
 }
 
 func (r *RoomKitchen) TransitionInfo() string {
 	answer := "кухня, ничего интересного. "
 
-	answer += "можно пройти - "
-	for placeNameRoom, exitsRoom := range mapTransitionRoom {
-		if placeNameRoom == RoomNameKitchen {
-			for _, exit := range exitsRoom {
-				answer += string(exit)
-			}
-		}
-	}
+	answer += GetExits(RoomNameKitchen)
 
 	return answer
 }
 
-func (r *RoomKitchen) DeleteItemFromFurniture(itemName string) {
+func (r *RoomKitchen) DeleteItemFromRoom(itemName string) {
 	for place, y := range r.mapPlaceItemKitchen {
 		r.mapPlaceItemKitchen[place] = deleteSliceItem(y, ItemsName(itemName))
 	}
@@ -82,4 +78,8 @@ func (r *RoomKitchen) IsItemExistThisRoom(itemName string) bool {
 		}
 	}
 	return false
+}
+
+func (r *RoomKitchen) ApplyItem(itemName ItemsName, interactionPlace InteractionPlaceName) string {
+	return ""
 }

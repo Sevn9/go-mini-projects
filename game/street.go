@@ -1,8 +1,7 @@
 package main
 
-import "fmt"
-
-type Street struct{}
+type Street struct {
+}
 
 func NewStreet() IRoom {
 	return &Street{}
@@ -13,31 +12,24 @@ func (s *Street) LookAroundInfo() string {
 	return answer
 }
 
+func (s *Street) CanExitTo(roomName RoomName) (bool, string) {
+	return true, ""
+}
+
 func (s *Street) TransitionInfo() string {
-	fmt.Println("LOG TransitionInfo: street")
 	answer := "на улице весна. "
-
-	answer += "можно пройти - "
-	for placeNameRoom, exitsRoom := range mapTransitionRoom {
-
-		exitsNameCounter := len(exitsRoom)
-
-		if placeNameRoom == RoomNameStreet {
-			for i, exit := range exitsRoom {
-				answer += string(exit)
-				if i < exitsNameCounter-1 {
-					answer += ", "
-				}
-			}
-		}
-	}
+	answer += GetExits(RoomNameStreet)
 
 	return answer
 }
 
-func (s *Street) DeleteItemFromFurniture(itemName string) {
+func (s *Street) DeleteItemFromRoom(itemName string) {
 }
 
 func (r *Street) IsItemExistThisRoom(itemName string) bool {
 	return false
+}
+
+func (r *Street) ApplyItem(itemName ItemsName, interactionPlace InteractionPlaceName) string {
+	return ""
 }

@@ -68,52 +68,49 @@ var (
 	}
 
 	//порядок в котором должны располагаться предметы в комнате MyRoom
-	placesOrderMyRoom = []PlaceName{PlaceNameTable, PlaceNameChair}
-
-	//взаимодействие предметов
-	itemsRules = map[ItemsName]map[InteractionPlaceName]string{
-		ItemsNameKeys: {interactionPlaceNameDoor: "дверь открыта"},
-	}
+	placesOrderMyRoom  = []PlaceName{PlaceNameTable, PlaceNameChair}
+	placesOrderKitchen = []PlaceName{PlaceNameTable}
 )
 
 type IRoom interface {
 	LookAroundInfo() string
 	TransitionInfo() string
-	DeleteItemFromFurniture(string)
+	DeleteItemFromRoom(string)
 	IsItemExistThisRoom(string) bool
-	//DeleteItemFromRoom(string)
+	ApplyItem(item ItemsName, interactionPlace InteractionPlaceName) string
+	CanExitTo(roomName RoomName) (bool, string)
 }
 
-/*
-func (r *Room) DeleteItemFromRoom(itemName string) {
+func GetExits(roomName RoomName) string {
+	_, roomNameExist := rooms[roomName]
 
-	for _, v := range r.FurnitureItem {
-
-		fmt.Println("LOG DeleteItemFromRoom before: " + v.Name + v.Items[0])
-
+	if !roomNameExist {
+		return "такой комнаты не существует"
 	}
-	//удаляем из доступных
-	delete(r.AvailableItems, itemName)
 
-	//удаляем из комнаты
-	for i, v := range r.FurnitureItem {
-		for y, item := range v.Items {
-			if item == itemName {
-				fmt.Println("LOG DeleteItemFromRoom: " + itemName)
-				v.Items = append(v.Items[:y], v.Items[y+1:]...)
+	answer := "можно пройти - "
+	for placeNameRoom, exitsRoom := range mapTransitionRoom {
 
-				if len(v.Items) == 0 {
-					r.FurnitureItem = append(r.FurnitureItem[:i], r.FurnitureItem[i+1:]...)
+		exitsNameCounter := len(exitsRoom)
+
+		if placeNameRoom == roomName {
+			for i, exit := range exitsRoom {
+				answer += string(exit)
+				if i < exitsNameCounter-1 {
+					answer += ", "
 				}
-				break
 			}
 		}
 	}
-
-	for _, v := range r.FurnitureItem {
-
-		fmt.Println("LOG DeleteItemFromRoom foreach: " + v.Name)
-
-	}
+	return answer
 }
-*/
+
+// удаляет одно вхождение в slice
+func deleteSliceItem[T comparable](items []T, value T) []T {
+	for i, v := range items {
+		if v == value {
+			return append(items[:i], items[i+1:]...)
+		}
+	}
+	return items
+}

@@ -8,20 +8,25 @@ func NewHome() IRoom {
 }
 
 func (r *Home) LookAroundInfo() string {
-	answer := "ты находишься в коридоре,"
-
-	//все места где можно выйти
-	//беру из mapChangeRoom и добавляю в answer
+	answer := "ты находишься дома"
 	return answer
+}
+
+func (r *Home) CanExitTo(roomName RoomName) (bool, string) {
+	return true, ""
 }
 
 func (r *Home) TransitionInfo() string {
 	return ""
 }
 
-func (r *Home) DeleteItemFromFurniture(itemName string) {
+func (r *Home) DeleteItemFromRoom(itemName string) {
 }
 
 func (r *Home) IsItemExistThisRoom(itemName string) bool {
 	return false
+}
+
+func (r *Home) ApplyItem(itemName ItemsName, interactionPlace InteractionPlaceName) string {
+	return ""
 }

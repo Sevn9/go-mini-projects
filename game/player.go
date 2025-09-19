@@ -1,7 +1,7 @@
 package main
 
 import (
-	"fmt"
+	"slices"
 	"strings"
 )
 
@@ -53,41 +53,42 @@ func (p *Player) commandHandler(command string) string {
 
 func (p *Player) GoToRoom(roomName string) string {
 
-	fmt.Println("LOG GoToRoom player:" + roomName)
-
 	var answer string
+	exitRoom := RoomName(roomName)
 
-	//проверить можно ли попасть в эту комнату из текущей
-	answerChangeRoom, isExist := mapTransitionRoom[p.currentRoom]
+	//существует ли эта комната
+	room, isRoomExist := rooms[exitRoom]
 
-	if !isExist {
+	if !isRoomExist {
+		return "такой комнаты не существует: " + roomName
+	}
+
+	//можно ли туда пройти
+	roomNames, _ := mapTransitionRoom[p.currentRoom]
+
+	if !slices.Contains(roomNames, exitRoom) {
 		return "нет пути в " + roomName
 	}
 
-	for _, roomNameChange := range answerChangeRoom {
-		if roomNameChange == RoomName(roomName) {
+	//проверка на условия выхода из комнаты
+	playerCurrentRoom, _ := rooms[p.currentRoom]
+	for _, elem := range roomNames {
+		if elem == exitRoom {
+			isCan, answerExit := playerCurrentRoom.CanExitTo(exitRoom)
 
-			fmt.Println("LOG roomName:" + roomName)
-
-			p.currentRoom = RoomName(roomName)
-			fmt.Println("LOG p.currentRoom:" + p.currentRoom)
-
-			room, isRoomExist := rooms[p.currentRoom]
-
-			if !isRoomExist {
-				fmt.Println("LOG GoToRoom room not exist:" + answer)
-				return "такой комнаты не существует"
+			if !isCan {
+				answer += answerExit
+				//если вернется неудовлетворительный результат то нельзя менять комнату
+				break
 			}
 
 			answer += room.TransitionInfo()
+			p.currentRoom = exitRoom
 
-			fmt.Println("LOG GoToRoom answer:" + answer)
-			return answer
+			break
 		}
 	}
-
-	//изменить состояние игрока
-	return "нет пути в " + roomName
+	return answer
 }
 
 func (p *Player) LookAround(instruction string) string {
@@ -98,6 +99,24 @@ func (p *Player) LookAround(instruction string) string {
 	}
 
 	answer := room.LookAroundInfo()
+
+	//проверить что собран рюкзак
+	if p.currentRoom == RoomNameKitchen {
+		var keys []ItemsName
+		for item := range p.inventoryItems {
+			keys = append(keys, item)
+		}
+
+		slices.Sort(keys)
+
+		if slices.Equal(keys, conditionForReadyGoingToSchool) {
+			answer += "надо идти в универ. "
+		} else {
+			answer += "надо собрать рюкзак и идти в универ. "
+		}
+	}
+
+	answer += GetExits(p.currentRoom)
 
 	return answer
 }
@@ -111,7 +130,6 @@ func (p *Player) PutOn(itemName string) string {
 	room, isRoomExist := rooms[p.currentRoom]
 
 	if !isRoomExist {
-		fmt.Println("LOG PutOn room not exist:" + p.currentRoom)
 		return "такой комнаты не существует"
 	}
 
@@ -128,7 +146,7 @@ func (p *Player) PutOn(itemName string) string {
 	p.isBackpackOn = true
 
 	//удалить из комнаты предмет т.к. его больше нет
-	room.DeleteItemFromFurniture(itemName)
+	room.DeleteItemFromRoom(itemName)
 
 	answer := "вы надели: " + itemName
 	return answer
@@ -136,7 +154,6 @@ func (p *Player) PutOn(itemName string) string {
 
 func (p *Player) Take(itemName string) string {
 
-	fmt.Println("LOG: Take() Был взят: " + itemName)
 	if !p.isBackpackOn {
 		return "некуда класть"
 	}
@@ -144,7 +161,6 @@ func (p *Player) Take(itemName string) string {
 	room, isRoomExist := rooms[p.currentRoom]
 
 	if !isRoomExist {
-		fmt.Println("LOG PutOn room not exist:" + p.currentRoom)
 		return "такой комнаты не существует"
 	}
 
@@ -158,7 +174,7 @@ func (p *Player) Take(itemName string) string {
 	p.inventoryItems[ItemsName(itemName)] = struct{}{}
 
 	//удалить из комнаты предмет т.к. его больше нет
-	room.DeleteItemFromFurniture(itemName)
+	room.DeleteItemFromRoom(itemName)
 
 	answer := "предмет добавлен в инвентарь: " + itemName
 
@@ -173,26 +189,19 @@ func (p *Player) Apply(instruction string) string {
 		return "неправильные входные данные"
 	}
 
-	itemName := instructionsSlice[0]
-	interactionsPlaceName := instructionsSlice[1]
+	itemName := ItemsName(instructionsSlice[0])
+	interactionsPlaceName := InteractionPlaceName(instructionsSlice[1])
 
 	//проверить предмет в инвентаре
-	_, exist := p.inventoryItems[ItemsName(itemName)]
-
-	fmt.Println("LOG: Apply() ")
+	_, exist := p.inventoryItems[itemName]
 
 	if !exist {
-		return "нет предмета в инвентаре - " + itemName
+		return "нет предмета в инвентаре - " + string(itemName)
 	}
 
-	//проверить можно ли применить к предмету
-	interactionMap, isItemRuleExist := itemsRules[ItemsName(itemName)]
+	room, _ := rooms[p.currentRoom]
 
-	if !isItemRuleExist {
-		return "не к чему применить"
-	}
-
-	resultAction := interactionMap[InteractionPlaceName(interactionsPlaceName)]
+	resultAction := room.ApplyItem(itemName, interactionsPlaceName)
 
 	return resultAction
 }

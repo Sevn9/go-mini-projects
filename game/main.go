@@ -1,20 +1,18 @@
 package main
 
 import (
-	"fmt"
+	"slices"
 )
 
 var player *Player
 var rooms map[RoomName]IRoom
+var conditionForReadyGoingToSchool []ItemsName
 
 var playerAction map[string]ActionDelegate
 
 type ActionDelegate func(*Player, string) string
 
 func main() {
-	//initGame()
-	//fmt.Println(handleCommand("идти комната"))
-	//initGame()
 }
 
 func initGame() {
@@ -37,10 +35,8 @@ func initGame() {
 		"применить":   (*Player).Apply,
 	}
 
-	room, isRoomExist := rooms[RoomNameMyRoom]
-	if isRoomExist {
-		fmt.Println("Y test", room.LookAroundInfo())
-	}
+	conditionForReadyGoingToSchool = []ItemsName{ItemsNameBackpack, ItemsNameKeys, ItemsNameNotes}
+	slices.Sort(conditionForReadyGoingToSchool)
 }
 
 // сюды приходит команда с тестов
@@ -49,14 +45,4 @@ func handleCommand(command string) string {
 	result := player.commandHandler(command)
 
 	return result
-}
-
-// удаляет одно вхождение в slice
-func deleteSliceItem[T comparable](items []T, value T) []T {
-	for i, v := range items {
-		if v == value {
-			return append(items[:i], items[i+1:]...)
-		}
-	}
-	return items
 }

@@ -11,6 +11,7 @@ type IPlayer interface {
 	PutOn(itemName string) string
 	Take(itemName string) string
 	Apply(instruction string) string
+	CommandHandler(command string) string
 }
 
 type Player struct {
@@ -19,7 +20,7 @@ type Player struct {
 	inventoryItems map[ItemsName]struct{}
 }
 
-func NewPlayer(room RoomName) *Player {
+func NewPlayer(room RoomName) IPlayer {
 	newPlayer := Player{
 		currentRoom:    room,
 		isBackpackOn:   false,
@@ -29,7 +30,7 @@ func NewPlayer(room RoomName) *Player {
 	return &newPlayer
 }
 
-func (p *Player) commandHandler(command string) string {
+func (p *Player) CommandHandler(command string) string {
 
 	var answer string
 	commandItems := strings.Split(command, " ")

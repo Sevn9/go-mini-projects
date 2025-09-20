@@ -4,13 +4,13 @@ import (
 	"slices"
 )
 
-var player *Player
+var player IPlayer
 var rooms map[RoomName]IRoom
 var conditionForReadyGoingToSchool []ItemsName
 
 var playerAction map[string]ActionDelegate
 
-type ActionDelegate func(*Player, string) string
+type ActionDelegate func(IPlayer, string) string
 
 func main() {
 }
@@ -28,11 +28,11 @@ func initGame() {
 	player = NewPlayer(RoomNameKitchen)
 	// создать мапу действий игрока: название - функция
 	playerAction = map[string]ActionDelegate{
-		"осмотреться": (*Player).LookAround,
-		"идти":        (*Player).GoToRoom,
-		"надеть":      (*Player).PutOn,
-		"взять":       (*Player).Take,
-		"применить":   (*Player).Apply,
+		"осмотреться": IPlayer.LookAround,
+		"идти":        IPlayer.GoToRoom,
+		"надеть":      IPlayer.PutOn,
+		"взять":       IPlayer.Take,
+		"применить":   IPlayer.Apply,
 	}
 
 	conditionForReadyGoingToSchool = []ItemsName{ItemsNameBackpack, ItemsNameKeys, ItemsNameNotes}
@@ -42,7 +42,7 @@ func initGame() {
 // сюды приходит команда с тестов
 func handleCommand(command string) string {
 
-	result := player.commandHandler(command)
+	result := player.CommandHandler(command)
 
 	return result
 }

@@ -11,9 +11,12 @@ func main() {
 	var wg sync.WaitGroup
 
 	for i := 1; i <= 5; i++ {
+
+		id := i
+
 		wg.Go(
 			func() {
-				printId(i)
+				printId(id)
 			})
 	}
 

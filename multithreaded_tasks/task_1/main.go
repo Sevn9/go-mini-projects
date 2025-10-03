@@ -9,6 +9,8 @@ import (
 
 func main() {
 
+	fmt.Println("task_1: ")
+
 	//способ 1 WaitGroup
 	var wg sync.WaitGroup
 

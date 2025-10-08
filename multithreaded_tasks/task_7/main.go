@@ -4,6 +4,7 @@ import (
 	"context"
 	"errors"
 	"fmt"
+	"sync"
 	"time"
 
 	"github.com/golang-jwt/jwt/v5"
@@ -29,6 +30,8 @@ var JwtTokenContextKey = contextKey{}
 func main() {
 	fmt.Println("task_7")
 
+	var wg sync.WaitGroup
+
 	ctx := context.Background()
 
 	currentUser := User{UserId: 1, UserName: "Alice", UserRole: "Admin"}
@@ -46,6 +49,20 @@ func main() {
 	}
 
 	fmt.Println("userId:", userId)
+
+	wg.Add(1)
+	go func(ctx context.Context) {
+		defer wg.Done()
+		userId, err := ExtractUserIDFromContext(ctxWithToken)
+		if err != nil {
+			panic(err)
+		}
+
+		fmt.Println("userId from goroutine:", userId)
+
+	}(ctxWithToken)
+
+	wg.Wait()
 
 }
 

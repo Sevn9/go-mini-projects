@@ -11,8 +11,9 @@ import (
 )
 
 type responseAnswer struct {
-	urlKey string
-	value  string
+	urlKey    string
+	value     string
+	errorData string
 }
 
 func main() {
@@ -20,15 +21,12 @@ func main() {
 
 	urls := []string{
 		"https://www.google.com",
+		"https://error-test-urls.com",
 		"https://github.com",
 		"https://www.golang.org",
-		"https://error-test-urls.com",
 	}
 
-	ctx, cancel := context.WithCancel(context.Background())
-	defer cancel()
-
-	resultmaps := FetchURLs(ctx, urls)
+	resultmaps := FetchURLs(context.Background(), urls)
 
 	for key, valueItem := range resultmaps {
 		fmt.Println("------------------------")
@@ -37,7 +35,10 @@ func main() {
 	}
 }
 
-func FetchURLs(ctx context.Context, urls []string) map[string]string {
+func FetchURLs(mainCtx context.Context, urls []string) map[string]string {
+
+	ctx, cancel := context.WithCancel(mainCtx)
+	defer cancel()
 
 	var wg sync.WaitGroup
 
@@ -73,7 +74,13 @@ func FetchURLs(ctx context.Context, urls []string) map[string]string {
 	//записываем результаты с воркеров
 	for item := range resultsChannnel {
 		mu.Lock()
-		results[item.urlKey] = item.value
+		//todo если ошибка то вызываем cancel и выходим из цикла
+		if item.errorData != "" {
+			results[item.urlKey] = item.errorData
+			cancel()
+		} else {
+			results[item.urlKey] = item.value
+		}
 		mu.Unlock()
 	}
 
@@ -82,17 +89,22 @@ func FetchURLs(ctx context.Context, urls []string) map[string]string {
 
 func sendRequestWorker(ctx context.Context, workerId int, urlsChan <-chan string, resultChan chan<- responseAnswer) {
 	for {
-		url, ok := <-urlsChan
-		if !ok {
+		select {
+		case <-ctx.Done():
 			return
-		}
-		if url != "" {
-			fmt.Printf("worker Id=%d start working, url: %s ", workerId, url)
-			resultAnswer := sendRequest(ctx, url)
-			resultChan <- resultAnswer
-			fmt.Printf("worker  Id=%d end working, url: %s ", workerId, url)
-		} else {
-			fmt.Printf("url %s is empty", url)
+
+		case url, ok := <-urlsChan:
+			if !ok {
+				return
+			}
+			if url != "" {
+				fmt.Printf("worker Id=%d start working, url: %s ", workerId, url)
+				resultAnswer := sendRequest(ctx, url)
+				resultChan <- resultAnswer
+				fmt.Printf("worker  Id=%d end working, url: %s ", workerId, url)
+			} else {
+				fmt.Printf("url %s is empty", url)
+			}
 		}
 	}
 }
@@ -100,7 +112,7 @@ func sendRequestWorker(ctx context.Context, workerId int, urlsChan <-chan string
 func sendRequest(ctx context.Context, url string) responseAnswer {
 
 	client := http.Client{
-		Timeout: 10 * time.Second,
+		Timeout: 5 * time.Second,
 	}
 
 	var answer responseAnswer
@@ -109,9 +121,10 @@ func sendRequest(ctx context.Context, url string) responseAnswer {
 	request, err := http.NewRequestWithContext(ctx, http.MethodGet, url, nil)
 	if err != nil {
 		answer = responseAnswer{
-			urlKey: url,
-			value:  "failed to create request: " + err.Error(),
+			urlKey:    url,
+			errorData: "failed to create request: " + err.Error(),
 		}
+
 		return answer
 	}
 
@@ -120,8 +133,8 @@ func sendRequest(ctx context.Context, url string) responseAnswer {
 
 	if err != nil {
 		answer = responseAnswer{
-			urlKey: url,
-			value:  "response error: " + err.Error(),
+			urlKey:    url,
+			errorData: "response error: " + err.Error(),
 		}
 
 		return answer
@@ -134,8 +147,8 @@ func sendRequest(ctx context.Context, url string) responseAnswer {
 
 	if err != nil {
 		answer = responseAnswer{
-			urlKey: url,
-			value:  "cant reading responce error: " + err.Error(),
+			urlKey:    url,
+			errorData: "cant reading responce error: " + err.Error(),
 		}
 
 		return answer
@@ -150,8 +163,9 @@ func sendRequest(ctx context.Context, url string) responseAnswer {
 	fmt.Printf("statusCode: %d,\n body: %s", statusCode, string(runesBody))
 
 	answer = responseAnswer{
-		urlKey: url,
-		value:  "statusCode: " + strconv.Itoa(statusCode) + "\n body: " + string(runesBody),
+		urlKey:    url,
+		value:     "statusCode: " + strconv.Itoa(statusCode) + "\n body: " + string(runesBody),
+		errorData: "",
 	}
 
 	return answer

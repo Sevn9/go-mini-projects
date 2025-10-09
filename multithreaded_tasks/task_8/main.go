@@ -1,6 +1,7 @@
 package main
 
 import (
+	"context"
 	"fmt"
 	"io"
 	"net/http"
@@ -24,8 +25,10 @@ func main() {
 		"https://error-test-urls.com",
 	}
 
-	//sendRequest(urls[0])
-	resultmaps := FetchURLs(urls)
+	ctx, cancel := context.WithCancel(context.Background())
+	defer cancel()
+
+	resultmaps := FetchURLs(ctx, urls)
 
 	for key, valueItem := range resultmaps {
 		fmt.Println("------------------------")
@@ -34,7 +37,7 @@ func main() {
 	}
 }
 
-func FetchURLs(urls []string) map[string]string {
+func FetchURLs(ctx context.Context, urls []string) map[string]string {
 
 	var wg sync.WaitGroup
 
@@ -52,7 +55,7 @@ func FetchURLs(urls []string) map[string]string {
 	for i := 1; i <= workersNum; i++ {
 		go func(workerId int) {
 			defer wg.Done()
-			sendRequestWorker(workerId, sendRequestChannnel, resultsChannnel)
+			sendRequestWorker(ctx, workerId, sendRequestChannnel, resultsChannnel)
 		}(i)
 	}
 
@@ -77,7 +80,7 @@ func FetchURLs(urls []string) map[string]string {
 	return results
 }
 
-func sendRequestWorker(workerId int, urlsChan <-chan string, resultChan chan<- responseAnswer) {
+func sendRequestWorker(ctx context.Context, workerId int, urlsChan <-chan string, resultChan chan<- responseAnswer) {
 	for {
 		url, ok := <-urlsChan
 		if !ok {
@@ -85,7 +88,7 @@ func sendRequestWorker(workerId int, urlsChan <-chan string, resultChan chan<- r
 		}
 		if url != "" {
 			fmt.Printf("worker Id=%d start working, url: %s ", workerId, url)
-			resultAnswer := sendRequest(url)
+			resultAnswer := sendRequest(ctx, url)
 			resultChan <- resultAnswer
 			fmt.Printf("worker  Id=%d end working, url: %s ", workerId, url)
 		} else {
@@ -94,7 +97,7 @@ func sendRequestWorker(workerId int, urlsChan <-chan string, resultChan chan<- r
 	}
 }
 
-func sendRequest(url string) responseAnswer {
+func sendRequest(ctx context.Context, url string) responseAnswer {
 
 	client := http.Client{
 		Timeout: 10 * time.Second,
@@ -102,7 +105,19 @@ func sendRequest(url string) responseAnswer {
 
 	var answer responseAnswer
 
-	resp, err := client.Get(url)
+	//собираем запрос с контекстом
+	request, err := http.NewRequestWithContext(ctx, http.MethodGet, url, nil)
+	if err != nil {
+		answer = responseAnswer{
+			urlKey: url,
+			value:  "failed to create request: " + err.Error(),
+		}
+		return answer
+	}
+
+	//непосредственно запрос
+	resp, err := client.Do(request)
+
 	if err != nil {
 		answer = responseAnswer{
 			urlKey: url,

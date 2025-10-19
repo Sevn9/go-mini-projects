@@ -74,13 +74,14 @@ func FetchURLs(mainCtx context.Context, urls []string) map[string]string {
 	//записываем результаты с воркеров
 	for item := range resultsChannnel {
 		mu.Lock()
-		//todo если ошибка то вызываем cancel и выходим из цикла
 		if item.errorData != "" {
 			results[item.urlKey] = item.errorData
 			cancel()
-		} else {
-			results[item.urlKey] = item.value
+			return results
 		}
+
+		results[item.urlKey] = item.value
+
 		mu.Unlock()
 	}
 
@@ -98,12 +99,12 @@ func sendRequestWorker(ctx context.Context, workerId int, urlsChan <-chan string
 				return
 			}
 			if url != "" {
-				fmt.Printf("worker Id=%d start working, url: %s ", workerId, url)
+				fmt.Printf("LOG: worker Id=%d start working, url: %s \n", workerId, url)
 				resultAnswer := sendRequest(ctx, url)
 				resultChan <- resultAnswer
-				fmt.Printf("worker  Id=%d end working, url: %s ", workerId, url)
+				fmt.Printf("LOG: worker  Id=%d end working, url: %s \n", workerId, url)
 			} else {
-				fmt.Printf("url %s is empty", url)
+				fmt.Printf("LOG: url %s is empty \n", url)
 			}
 		}
 	}

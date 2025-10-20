@@ -1,12 +1,48 @@
-package main // определили пакет main
+package main
 
-import "fmt" // импортировали пакет fmt
+import (
+	"slices"
+)
 
-// функция для входа в программу
+var player IPlayer
+var rooms map[RoomName]IRoom
+var conditionForReadyGoingToSchool []ItemsName
+
+var playerAction map[string]ActionDelegate
+
+type ActionDelegate func(IPlayer, string) string
+
 func main() {
-	var name string // объявили переменную name типа string
-	fmt.Scan(&name) // считали переменную name с потока ввода
+}
 
-	// функция Print() печатает сообщение в консоль
-	fmt.Print("Hello, ", name)
+func initGame() {
+	//заново инициализируем комнаты
+	rooms = map[RoomName]IRoom{
+		RoomNameKitchen:  NewKitchen(),
+		RoomNameMyRoom:   NewMyRoom(),
+		RoomNameCorridor: NewCorridor(),
+		RoomNameStreet:   NewStreet(),
+		RoomNameHome:     NewHome(),
+	}
+
+	player = NewPlayer(RoomNameKitchen)
+	// создать мапу действий игрока: название - функция
+	playerAction = map[string]ActionDelegate{
+		"осмотреться": IPlayer.LookAround,
+		"идти":        IPlayer.GoToRoom,
+		"надеть":      IPlayer.PutOn,
+		"взять":       IPlayer.Take,
+		"применить":   IPlayer.Apply,
+	}
+
+	conditionForReadyGoingToSchool = []ItemsName{ItemsNameBackpack, ItemsNameKeys, ItemsNameNotes}
+	slices.Sort(conditionForReadyGoingToSchool)
+}
+
+// сюды приходит команда с тестов
+func handleCommand(command string) string {
+
+	result := player.CommandHandler(command)
+
+	return result
 }
